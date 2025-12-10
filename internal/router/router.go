@@ -1,7 +1,9 @@
 package router
 
 import (
-	"github.com/Laanaa/my-app/internal/person"
+	"github.com/Laanaa/my-app/internal/app/auth"
+	"github.com/Laanaa/my-app/internal/app/auth/middleware"
+	"github.com/Laanaa/my-app/internal/app/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -9,17 +11,21 @@ import (
 func Router() *gin.Engine {
 	r := gin.Default()
 
-	repo := person.NewRepository()
-	service := person.NewService(repo)
-	controller := person.NewController(service)
+	r.Use(middleware.SessionMiddleware())
 
-	api := r.Group("/persons")
+	authService := auth.AuthService{
+		Repo: user.UserRepository{},
+	}
+
+	authHandler := auth.AuthHandler{
+		Service: authService,
+	}
+
+	auth := r.Group("/auth")
 	{
-		api.GET("/", controller.GetAll)
-		api.GET("/:id", controller.GetByID)
-		api.PUT("/:id", controller.Update)
-		api.POST("/create", controller.Create)
-		api.DELETE("/:id", controller.Delete)
+		auth.POST("/register", authHandler.Register)
+		auth.POST("/login", authHandler.Login)
+		auth.POST("/logout", authHandler.Logout)
 	}
 
 	return r
